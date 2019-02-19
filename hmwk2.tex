@@ -1,0 +1,222 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage{tcolorbox}
+\usepackage{amsmath}
+\newtheorem{problem}{Problem}
+\usepackage{amssymb}
+\usepackage{hyperref}
+\usepackage{xcolor}
+
+\usepackage{geometry}
+ \geometry{
+ a4paper,
+ total={170mm,257mm},
+ left=20mm,
+ top=20mm,
+ }
+\title{ESE 650, Spring 2019 Assignment 2}
+\date{Due on Friday February 19th, 2019,11:59PM}
+
+\begin{document}
+
+\maketitle
+This assignment is split into two parts. The first part is worth 25 points and the second points is worth 75 points. 
+\section{EKF (25 Points)}
+Type your answers in \LaTeX\ in the colored boxes and submit the generated pdf on Canvas.  \textbf{Show all your work for full credit}. 
+
+
+\begin{problem}
+Extended Kalman Filter Problem
+
+Consider a dynamical system defined by the following functions, $g$, and $h$ corresponding to state update and measurement.
+
+\[
+g \left( 
+\begin{pmatrix} x_1 \\ x_2 \end{pmatrix},
+\begin{pmatrix} u_1 \\ u_2 \end{pmatrix}
+\right) 
+= \begin{pmatrix}
+x_1 + u_2 x_2 + u_1 x_1^2 \\
+u_1 x_2 + u_2 \log (x_1)
+ \end{pmatrix}
+\]
+$h = (x_1 / x_2)$
+\begin{itemize}
+
+\item Compute expressions for the relevant Jacobian matrices, $G_t$ and $H_t$, used in the Extended Kalman filter.
+
+\begin{tcolorbox}
+\begin{align*}
+ G_t &= \begin{bmatrix}s
+         1+2u_1x_1 & u_2
+         \\
+         \frac{u_2}{x_1} & u_1
+        \end{bmatrix}
+\\
+H_t &= \begin{bmatrix}
+        \frac{1}{x_2}
+        \\
+       \frac{- x_1}{x^2_2}
+       \end{bmatrix}
+\end{align*}
+
+
+
+
+\end{tcolorbox}
+
+\item Compute the Kalman gain matrix $K_t$ using the following parameter values.
+
+$\hat{\bf x}_{t-1} = \begin{pmatrix} 3 \\ 4 \end{pmatrix}$,
+${\bf u}_t = \begin{pmatrix} 1 \\ 2 \end{pmatrix}$,
+
+$\Sigma_{t-1} = \begin{pmatrix} 8 & 3 \\ 3 & 4 \end{pmatrix}$,
+$R_t = \begin{pmatrix} 5 & 1 \\ 1 & 3 \end{pmatrix}$,
+$Q_t = 10$
+
+Note that you should compute $\Sigma_t$ before computing $K_t$
+\begin{tcolorbox}
+We compute
+\begin{align*}
+ g_t = \begin{bmatrix}
+        3+2*4+1*3^2
+        \\
+        1*4+2*\log(3)
+       \end{bmatrix} = \begin{bmatrix}
+       20
+       \\
+       6.197
+       \end{bmatrix}
+\end{align*}
+
+\begin{align*}
+ G_t &= \begin{bmatrix}
+        1+2*1*3 & 4
+        \\
+        \frac{1}{3} & 1
+       \end{bmatrix} = \begin{bmatrix}
+        7 & 4
+        \\
+        \frac{1}{3} & 1
+       \end{bmatrix} 
+    \\
+ H_t &= \begin{bmatrix}
+        \frac{1}{4}
+        &
+        3
+       \end{bmatrix}
+\end{align*}
+
+\begin{align*}
+ \Sigma_t &= \begin{bmatrix}
+        7 & 4
+        \\
+        \frac{1}{3} & 1
+       \end{bmatrix} \begin{bmatrix}
+       8 & 3 \\
+       3 & 4
+       \end{bmatrix}\begin{bmatrix}
+        7 & \frac{1}{3} 
+        \\
+        4 & 1
+       \end{bmatrix} + \begin{bmatrix}
+       5 & 1 \\
+       1 & 3
+       \end{bmatrix}
+       =
+       \begin{bmatrix}
+        629 & \frac{182}{3}
+        \\
+        \frac{182}{3} & \frac{89}{9}
+       \end{bmatrix}
+       \\
+K &= \begin{bmatrix}
+        629 & \frac{182}{3}
+        \\
+        \frac{182}{3} & \frac{89}{9}
+       \end{bmatrix}
+       \begin{bmatrix}
+        \frac{1}{4}
+        \\
+        3
+       \end{bmatrix}
+       \left(
+       \begin{bmatrix}
+        \frac{1}{4}
+        &
+        3
+       \end{bmatrix}
+       \begin{bmatrix}
+        629 & \frac{182}{3}
+        \\
+        \frac{182}{3} & \frac{89}{9}
+       \end{bmatrix}
+       \begin{bmatrix}
+        \frac{1}{4}
+        \\
+        3
+       \end{bmatrix}
+       +
+       10
+       \right)^{-1}
+       \\
+       &=
+       \begin{bmatrix}
+        \frac{1357}{4}
+        \\
+        \frac{269}{6}
+       \end{bmatrix}
+       \left(
+       219.3125+10
+       \right)^{-1}
+       \\
+       &=
+        \begin{bmatrix}
+        1.4794
+        \\
+        0.1955
+       \end{bmatrix}
+\end{align*}
+
+
+
+\end{tcolorbox}
+
+\end{itemize}
+
+
+\end{problem}
+
+
+
+
+\section{Estimate Orientations (75 Points)}
+In this project, you will implement a Kalman filter to track three dimensional orientation. Given IMU  sensor  readings  from  gyroscopes  and  accelerometers,  you  will  estimate  the  underlying  3D orientation  by  learning  the  appropriate  model  parameters  from  ground  truth  data  given  by  a Vicon motion capture system. \\
+
+This project mainly revolves around implementing the algorithm described in this paper \color{blue}\href{https://pdfs.semanticscholar.org/3085/aa4779c04898685c1b2d50cdafa98b132d3f.pdf}{A Quaternion-base Unscented Kalman Filter for Orientation Tracking}.\\
+
+\color{black}
+Data is available here \color{blue}{\href{https://upenn.box.com/s/0sco8ey93itpdjdssrba2du50lita376}{https://upenn.box.com/s/0sco8ey93itpdjdssrba2du50lita376}}\\
+
+\color{black} 
+
+\textbf{Instructions and Tips}
+
+\begin{enumerate}
+    \item You  will  find  a  set  of  IMU  data and another set of data that gives the  corresponding tracking information from the Vicon motion capture system. Download these files and be sure you can load and interpret the file formats.* The files are given as ‘.mat’ files. Make sure you can load these into python first. (Hint - scipy.io.loadmat)
+    \item This will return a dictionary form. Please disregard the following keys and corresponding values: 'version’, ‘header’, ‘global’. The keys, ‘cams’, ‘vals’, ‘rots’, and ‘ts’ are the main data you need to use.
+    \item Note that the biases and scale factors of the IMU sensors are unknown, as well  as  the  registration  between  the  IMU  coordinate  system  and  the  Vicon  global  coordinate  system. You will have to figure them out.
+    \item You  will  write  a  function  that  computes  orientation  only  based  on gyro data, and another function that computes orientation only based on accelerometer data. Youshould check  that  each  function  works  well  before  you  try  to  integrate  them  into  a  single  filter.  This  is important!
+    \item You will write a filter to process this data and track the orientation of the platform. You  can  try  to  use  a  Kalman  filter,  EKF  or  UKF  to  accomplish  this.  You  will  have  to  optimize  over model parameters. You can compare your resulting orientation estimate with the “ground truth” estimate from the Vicon. 
+\end{enumerate}
+
+
+We will use ENIAC to submit assignments. 
+After you have uploaded your submission to the ENIAC according to instructions in the above link, you may submit your estimate\_rot.py \textbf{AND ALL FILES IT DEPENDS ON} for grading by running the following command on the ENIAC. For example, if estimate\_rot depends on bias.py and motion.py then turn your assignment in using
+
+\textit{turnin -c ese650 -p project1 estimate\_rot.py, bias.py, motion.py}
+
+
+
+\end{document}
+
