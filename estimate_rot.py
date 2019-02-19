@@ -27,7 +27,7 @@ def estimate_rot(data_num=1):
                     [ 0, 0,   0,    off1G, 1, off1G],
                     [ 0, 0,   0,    off2G, off1G,   1]])
     base = np.matmul(base.transpose(),base)+10**-5*np.eye(6)
-    R = 250*np.eye(6)   # np.eye(6)#estQ(data[0:100])
+    R = 150*np.eye(6)   # np.eye(6)#estQ(data[0:100])
     Q = 0.09*np.eye(6) #np.eye(6) # np.eye(6) #base
     roll, pitch, yaw = ukf(data, imuts, P, R, Q)
     return roll, pitch, yaw
