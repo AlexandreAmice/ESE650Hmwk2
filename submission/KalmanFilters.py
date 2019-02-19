@@ -7,84 +7,6 @@ from math import cos, sin, exp, pi
 from quat import *
 import matplotlib.pyplot as plt
 
-# def ukf_update(mu, sigma, u, z, alpha, kappa, stateTrans, obsTrans, R= None, Q= None):
-#     '''
-#     computes one Unscented Kalman Filter update
-#     :param mu: Mean of assumed state
-#     :param sigma: Covariance of assumed state
-#     :param u: controller action
-#     :param z: observation
-#     :param alpha: parameter for update alpha in (0,1]
-#     :param kappa: parameter for update kappa in [0, infty)
-#     :param stateTrans: state transition function
-#     :param obsTrans: observer transition function
-#     :param R: covariance of state noise
-#     :param Q: covariance of measurement noise
-#     :return: new mean and covariance estimate of state
-#     '''
-#     n, _ = sigma.shape
-#     l = alpha**2*(n+kappa)-n
-#     beta = 2
-#     gamma = np.sqrt(n+l)
-#     stateTrans = partial(stateTrans, u)
-#     if R is None:
-#         R = np.eye(n)
-#     if Q is None:
-#         Q = np.eye(n)
-#
-#     #sigma points
-#     Wi = np.concatenate((0, gamma*np.sqrt(sigma), gamma*np.sqrt(sigma)),1)
-#     #transformed points
-#     transX = np.apply_along_axis(stateTrans, 1, setX)
-#     transObs = np.apply_along_axis(obsTrans,1,transX)
-#
-#     wm0 = np.array([[l/(n+l)]])
-#     wc0 = wm0 + (1-alpha**2+beta)
-#     meanWeights = np.transpose(np.concatenate((wm0, 1/(2*(n+l))*np.ones((1,2*n))), 1))
-#     covWeights = np.transpose(np.concatenate((wc0, 1/(2*(n+l))*np.ones((1,2*n))), 1))
-#
-#     barMu = np.matmul(transX, meanWeights)
-#     barSigma = np.zeros_like(sigma)
-#     for i in range(0,len(covWeights)):
-#         barSigma += covWeights[i]*np.matmul((transX[:,i:i+1]- barMu), np.transpose(transX[:,i:i+1]-barMu))
-#     barSigma += R
-#
-#     zHat = np.matmul(transObs, meanWeights)
-#     S = np.zeros_like(sigma)
-#     for i in range(0, len(covWeights)):
-#         S += covWeights[i] * np.matmul((transObs[:,i:i+1] - zHat), np.transpose(transObs[:,i:i+1] - zHat))
-#     S += Q
-#
-#     sigmaXZ = np.zeros_like(sigma)
-#     for i in range(0, len(covWeights)):
-#         sigmaXZ += covWeights[i] * np.matmul((transX[:,i:i+1] - barMu), np.transpose(transObs[:,i:i+1] - zHat))
-#     K = np.matmul(sigmaXZ, npl.inv(S))
-#
-#     newMu = barMu + np.matmul(K, z-zHat)
-#     newSigma = barSigma - np.matmul(K,np.matmul(S, np.transpose(K)))
-#     return newMu, newSigma
-#     #END ukf_update
-#
-# def ukf(initialPoint, initialCov, actSeq, obsSeq, alpha, kappa, stateTrans, obsTrans, R= None, Q= None):
-#     '''
-#     :param initialPoint: starting points
-#     :param initialCov: initial covariance
-#     :param actSeq: sequence of actions
-#     :param obsSeq: sequence of observations
-#     :param alpha: parameter for update alpha in (0,1]
-#     :param kappa: parameter for update kappa in [0, infty)
-#     :param stateTrans: state transition function
-#     :param obsTrans: observer transition function
-#     :param R: covariance of state noise
-#     :param Q: covariance of measurement noise
-#     :return: endPoint MLE and Covariance
-#     '''
-#     curPoint = initialPoint
-#     curCov = initialCov
-#     for (u,z) in zip(actSeq, obsSeq):
-#         curPoint, curCov = ukf_update(curPoint,curCov, u, z, alpha, kappa, stateTrans, obsTrans, R, Q)
-#     return curPoint, curCov
-
 def ukf_update_q(stateVect, P0, obsVect, R, Q, dt):
     '''
     #data sheet for observation is at https://d1b10bmlvqabco.cloudfront.net/attach/jqzm87i1qhb68t/is9oo9a6f3c1gb/js6kaguyn3m1/IMU_reference.pdf
@@ -97,10 +19,10 @@ def ukf_update_q(stateVect, P0, obsVect, R, Q, dt):
     :return:
     '''
     stateVect = stateVect.astype(float)
-    Q = Q*dt
+    #Q = Q*dt
     accData = obsVect[0:3]
     gyroData = np.array([obsVect[4], obsVect[5], obsVect[3]])  # rectify observation data to fit with state vector convention
-    #obsVect = np.concatenate((accData, gyroData), 0)
+    obsVect = np.concatenate((accData, gyroData), 0)
     q0 = stateVect[0:4]
     (n,_) =  P0.shape
     omega0 = stateVect[4:]
@@ -119,7 +41,6 @@ def ukf_update_q(stateVect, P0, obsVect, R, Q, dt):
         qw = unitQuat(posNoise)
         posVect = quatMult(q0, qw)
         velVect = omega0 + velNoise
-
         Xi[:,c] = np.concatenate((posVect, velVect))
 
     #apply state transformation
@@ -190,15 +111,12 @@ def ukf(observations, timesteps, P0, R, Q):
     curState = initState
     curCov = P0
     for j in range(0,numItems):
-        if j % 1000 == 0:
-            print j
         curObs = observations[:,j]
         dt = timesteps[0,j+1]-timesteps[0,j]
         curState, curCov = ukf_update_q(curState, curCov, curObs, R, Q, dt)
         rotMat = quatToRot(curState)
         roll[j], pitch[j], yaw[j] = rotToRollPitchYaw(rotMat)
     t1 = time.time()
-    print t1-t0
     return roll, pitch, yaw
 
 
@@ -214,6 +132,9 @@ def ImuToPhysical(data):
     g = 9.8 #m/s^2
     valA = lambda raw: ((raw*vrefA)/quant-biasA)/sensitivityA*g
     valG = lambda raw: ((raw*vrefG)/quant-biasG)/sensitivityG*pi/180
+    bias = np.array([370.2, 374, 375.7])
+    scaleFact = 0.0162
+    valG = lambda raw: (raw-bias)*scaleFact
     for i in range(0,data.shape[1]):
         data[0:3,i] = valA(data[0:3,i])
         data[0:2,i] = -data[0:2,i] #Ax and Ay are backwards
@@ -245,7 +166,6 @@ def estQ(data):
     meanData = np.mean(data,1)
     dataNoMean = (data.transpose()-meanData).transpose()
     Q = np.matmul(dataNoMean,dataNoMean.transpose())
-    print Q
     return Q
 
 def rmse(predictions, targets):
@@ -271,10 +191,6 @@ if __name__ == '__main__':
     rollV, pitchV, yawV = np.zeros(numV), np.zeros(numV), np.zeros(numV)
     for i in range(0, len(rollV)):
         rollV[i], pitchV[i], yawV[i] = rotToRollPitchYaw(viconMats[:, :, i])
-
-    # print rmse(rollV, roll)
-    # print rmse(pitchV, pitch)
-    # print rmse(yawV, yaw)
 
 
     fig = plt.figure()

@@ -19,10 +19,9 @@ def ukf_update_q(stateVect, P0, obsVect, R, Q, dt):
     :return:
     '''
     stateVect = stateVect.astype(float)
-    #Q = Q*dt
     accData = obsVect[0:3]
     gyroData = np.array([obsVect[4], obsVect[5], obsVect[3]])  # rectify observation data to fit with state vector convention
-    #obsVect = np.concatenate((accData, gyroData), 0)
+    obsVect = np.concatenate((accData, gyroData), 0)
     q0 = stateVect[0:4]
     (n,_) =  P0.shape
     omega0 = stateVect[4:]
@@ -30,9 +29,12 @@ def ukf_update_q(stateVect, P0, obsVect, R, Q, dt):
 
     #create Sigma points
     #print "start sigma point creation"
-    Wi = np.concatenate(( sqrt(2 * n) * S, -sqrt(2 * n) * S), 1)
+    # Wi = np.concatenate(( sqrt(2 * n) * S, -sqrt(2 * n) * S), 1)
+    k = 0.5
+    alpha = 8
+    #Wi = np.concatenate(( sqrt( k*n+alpha) * S, -sqrt(k*n+alpha) * S), 1)
     # Adjust the first column here to add the mean vector
-    # Wi = np.concatenate((np.zeros((n,1)), sqrt(2*n)*S, -sqrt(2*n)*S),1)
+    Wi = np.concatenate((np.zeros((n,1)), sqrt(k*n+alpha)*S, -sqrt(k*n+alpha)*S),1)
 
     Xi = np.concatenate((np.zeros((1,Wi.shape[1])), np.zeros_like(Wi)))
     for c in range(Wi.shape[1]):
@@ -41,7 +43,6 @@ def ukf_update_q(stateVect, P0, obsVect, R, Q, dt):
         qw = unitQuat(posNoise)
         posVect = quatMult(q0, qw)
         velVect = omega0 + velNoise
-
         Xi[:,c] = np.concatenate((posVect, velVect))
 
     #apply state transformation
@@ -133,6 +134,9 @@ def ImuToPhysical(data):
     g = 9.8 #m/s^2
     valA = lambda raw: ((raw*vrefA)/quant-biasA)/sensitivityA*g
     valG = lambda raw: ((raw*vrefG)/quant-biasG)/sensitivityG*pi/180
+    # bias = np.array([370.2, 374, 375.7])
+    # scaleFact = 0.0162
+    # valG = lambda raw: (raw-bias)*scaleFact
     for i in range(0,data.shape[1]):
         data[0:3,i] = valA(data[0:3,i])
         data[0:2,i] = -data[0:2,i] #Ax and Ay are backwards

@@ -158,7 +158,6 @@ def quatAveraging(initQuat, quatSet):
     :param quatSet: passed as a matrix with columns being unit quats
     :return: average quaternion and final error vectors
     '''
-    t0 = time.time()
     numQuats = quatSet.shape[1]
     t = 0
     qtbar = initQuat
@@ -174,12 +173,6 @@ def quatAveraging(initQuat, quatSet):
         equatTot = unitQuat(e)
         qtbar = quatMult(equatTot, qtbar)
         t +=1
-    t1 = time.time()
-    # print t1-t0
-    # print t
-    # print npl.norm(e)
-    # print
-
     return qtbar, eiVect
 
 def quatToRollPitchYaw(quat):
